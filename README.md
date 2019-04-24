@@ -23,16 +23,17 @@ In this folder are a number of PowerShell scripts. Those ending in .psm1 are [Po
 
 ## Class Scripts
 This is the listing of the class modules that reside in this directory:
-|Script Name|Description/Functionality|
+
+|Script Name|Description-Functionality|
 |--------------------------|--------------------------------|
 |clsSubscription.psm1|Subscription level functionality.|
-||<b>Classes</b> : SubscriptionManager, Subscription|
+|...|<b>Classes</b> : SubscriptionManager, Subscription|
 |clsResourceGroupManager.psm1|Resource Group functionality.|
-||<b>Classes</b> : ResourceGroupManager, ResourceGroup, GroupBuckets, GroupSummary, GroupDetails|
+|...|<b>Classes</b> : ResourceGroupManager, ResourceGroup, GroupBuckets, GroupSummary, GroupDetails|
 |clsCompute.psm1|Virtual Machine compute resources.|
-||<b>Classes</b> : AzureCompute, VirtualMachine, AMLSWorkspace, AMLSCluster<sup>1</sup>|
+|...|<b>Classes</b> : AzureCompute, VirtualMachine, AMLSWorkspace, AMLSCluster<sup>1</sup>|
 |clsBlobStorage.psm1|Azure Storage functionality.|
-||<b>Classes</b> : BlobStorage<sup>2</sup>|
+|...|<b>Classes</b> : BlobStorage<sup>2</sup>|
 
 <sup>1</sup> With the latest Azure Machine Learning Service (AMLS), AmlCompute clusters based on Azure Kubernetes Service (AKS) do not appear as standard Virtual Machines in the source subscription. The clsCompute.psm1 file searches, specifically, for AMLS workspaces and detects if there are hidden Virtual Machines in your subscription to provide a full picture of compute resources that are out there.
 
