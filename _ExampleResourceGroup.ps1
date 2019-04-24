@@ -1,3 +1,9 @@
+#############################################################################
+#	In this example we will collect information Resource groups 
+#	in a specific subscription.
+#############################################################################
+
+# Import the correct class modules
 Using module .\clsSubscription.psm1
 Using module .\clsResourceGroupManager.psm1
 
@@ -21,19 +27,23 @@ if($result.Count -eq 1)
 	$subManager.SetSubscription($currentSubscription)
 	$resourceGroupManager = [ResourceGroupManager]::new()
 
-	# Find a specific group and unlock it (or delete it)
+	# Uncomment this code and change the group name from unknowngroup
+	# to remove all locks from the group (if it's found)
+	<#
 	$testGroup = $resourceGroupManager.GetGroup('unknowngroup')
 	if($testGroup)
 	{
 		# unlock it, find missing tags, or modify the tags in Azure 
 		$testGroup.Unlock()
 	}
+	#>
 	
 	# Get a list of all the resource groups in buckets.
 	$groupBuckets = $resourceGroupManager.GetGroupBuckets()
 	Write-Host("Group Buckets")
 	Write-Host(($groupBuckets | ConvertTo-Json))
 
+	# Get a summary of all the resource groups.
 	$groupSummary = $resourceGroupManager.GetGroupSummary()
 	Write-Host("Group Summary")
 	Write-Host(($groupSummary | ConvertTo-Json))

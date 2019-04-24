@@ -3,6 +3,7 @@
 # 	Azure Machine Learning Service compute.
 #############################################################################
 
+# Import classes
 using module .\clsSubscription.psm1
 using module .\clsResourceGroupManager.psm1 
 using module .\clsCompute.psm1 
@@ -46,6 +47,12 @@ if($result.Count -eq 1)
 	$virtualMachines = $azureCompute.GetVirtualMachines($null,$null)
 	$vmSummary = $azureCompute.GetVirtualMachineSummary($null,$null)
 	
+	
+	####################################################################
+	# Get a listing of ONLY GPU machines
+	####################################################################
+	$gpuMachines = $azureCompute.GetVirtualMachines($null,'*nc*')
+	
 	Write-Host("AMLS Summary:")
 	Write-Host(($amlsSummary | ConvertTo-Json -depth 100))
 	Write-Host("")
@@ -66,4 +73,8 @@ if($result.Count -eq 1)
 	Write-Host("Virtual Machines:")
 	Write-Host(($virtualMachines | ConvertTo-Json -depth 100))
 
+	Write-Host("")
+	Write-Host("")
+	Write-Host("GPU Virtual Machines:")
+	Write-Host(($gpuMachines | ConvertTo-Json -depth 100))
 }
