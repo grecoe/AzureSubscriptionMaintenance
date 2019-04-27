@@ -1,4 +1,7 @@
 
+#############################################################################
+#	Simple blob storage functionality. 
+#############################################################################
 class BlobStorage {
 	[string]$StorageAccount
 	[string]$StorageKey

@@ -1,3 +1,6 @@
+using module .\clsResources.psm1
+using module .\clsSubscription.psm1
+
 #############################################################################
 #	When the user issues the call to ResourceGroupManager::GetGroupDetails
 #	This is used to determine if a group is managed by another group.
@@ -51,6 +54,47 @@ class ResourceGroup{
 		
 		return $returnTable
 	}
+	
+	#########################################################################
+	#	Move a resource group to another group inside same subscrition or 
+	#	another subscription. 
+	#	https://docs.microsoft.com/en-us/azure/virtual-machines/windows/move-vm
+	#	https://social.msdn.microsoft.com/Forums/en-US/dfffb059-3c64-4438-aa39-4ad2c7fbd3dc/unable-to-move-resource-groups-to-another-subscription-because-of-plan?forum=DataMarket
+	#	https://docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-move-resources#services-that-do-not-enable-move
+	#########################################################################
+	[void] Move([string]$destinationGroup, [Subscription]$destinationSubscription)
+	{
+		$resourceIdList = New-Object System.Collections.ArrayList
+		$groupResources = [AzureResources]::GetGroupResources($this.Name)
+		foreach($key in $groupResources.Keys)
+		{
+			if($groupResources[$key].ContainsKey("ResourceId"))
+			{
+				$resourceIdList.Add($groupResources[$key]["ResourceId"]) > $null
+			}
+		}
+		
+		if($resourceIdList.Count -gt 0)
+		{
+			$command = $null
+			$resourceMoveList = $resourceIdList -join ","
+			
+			if($destinationSubscription)
+			{
+				$command = "Move-AzureRmResource -DestinationSubscriptionId " + $destinationSubscription.Id + " -DestinationResourceGroupName " + $destinationGroup + " -ResourceId " + $resourceMoveList
+			}
+			else
+			{
+				$command = "Move-AzureRmResource -DestinationResourceGroupName " + $destinationGroup + " -ResourceId " + $resourceMoveList
+			}
+			
+			$expression = $command + ' -confirm:$false'
+
+			Write-Host("Executing: " + $expression)
+			$result = Invoke-Expression $expression
+			Write-Host(($result | ConvertTo-Json -depth 100))
+		}
+	}	
 	
 	#########################################################################
 	#	Input is a hash table of tagName, tagValue. If empty, tags are removed
@@ -371,7 +415,7 @@ class ResourceGroupManager {
 					$properties = $lock.Properties | ConvertTo-Json
 					$propobject = ConvertFrom-Json -InputObject $properties
 					$lockType = $propobject.psobject.properties["level"].value
-					$newGroup.Locks.Add($lock.Name, $lockType)
+					$newGroup.Locks.Add($lock.LockId, $lockType)
 				}
 			}
 			

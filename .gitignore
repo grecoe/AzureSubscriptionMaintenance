@@ -1,2 +1,5 @@
-# Prerequisites
+# Local files
+/TestMove.ps1
+/Subscriptions.json
+/ComplianceCheck/*
 

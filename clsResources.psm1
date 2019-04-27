@@ -77,7 +77,8 @@ class AzureResources {
 	#
 	#
 	#	Returns:
-	#		HashTable<[string]resourceName, [string]resourceType>
+	#		HashTable<[string]resourceName, HashTable<id, value>
+	#			id = ResourceType | ResourceId 
 	###############################################################
 	static [System.Collections.Hashtable]  GetGroupResources([string]$resourceGroup) {
 	
@@ -86,12 +87,24 @@ class AzureResources {
 		$allResources = Get-AzureRmResource -ResourceGroupName $resourceGroup
 		foreach($res in $allResources)
 		{
-			$returnTable.Add($res.Name, $res.ResourceType)
+			$resourceData = @{}
+			$resourceData.Add("ResourceType", $res.ResourceType)
+			$resourceData.Add("ResourceId", $res.Id)
+			$returnTable.Add($res.Name, $resourceData)
 		}
 		
 		return $returnTable
 	}	
 
+	###############################################################
+	# DeleteResource
+	#
+	#	Delete a resource
+	#
+	#
+	#	Returns:
+	#		HashTable<[string]resourceName, [string]resourceType>
+	###############################################################
 	static [void]  DeleteResource([string]$resourceName, [string]$resourceType) {
 		Remove-AzureRmResource -ResourceName $resourceName -ResourceType $resourceType
 	}	
