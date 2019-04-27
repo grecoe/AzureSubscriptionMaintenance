@@ -103,3 +103,14 @@ So the steps in this script are:
 
 * Get the buckets of resource groups.
 * Go through only the unlocked ones, and if ANY of the three tags are missing, delete it. (Ok, it's not really deleted because the line is commented out but...you get the picture.)
+
+## Full Compliance Scenario
+The following scripts can be used in conjunction to perform a compliance check across all of the available subscriptions for a logged in user:
+
+|Script| Purpose|
+|----------------------|---------------------|
+|_CMP01_CollectSubs.ps1| This script collects a list of all available subscriptions into a local file, identified by the caller, to be used as input to the next script. Modify the file to include ONLY the subscriptions you want information from.|
+|_CMP02_Driver.ps1| Uses the output (and possibly modified file) from teh _CMP01_CollectSubs.ps1 script. Internally calls the final script _CMP03_Check.ps1 for each subscription in the input file.|
+|_CMP03_Check.ps1| This is the script that does the actual compliance check. It iterates over all of the resource group buckets, except Special, to determine what has been tagged and what has not.|
+
+***NOTE*** To do actual cleanup, and to specify the required tags for your need, change teh _CMP03_Check.ps1 script.
