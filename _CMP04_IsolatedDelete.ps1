@@ -18,45 +18,23 @@ Using module .\clsResourceGroupManager.psm1
 #####################################################
 param(
 	[string]$subId,
-	[string]$subName
+	[string]$subName,
+	[string]$rgPattern
 )
 
-function GetGroupInformation{
-	Param([System.Collections.ArrayList]$groupBucket,
-		  [SubscriptionManager]$subManager,
-		  [ResourceGroupManager]$resourceGroupManager,
-		  [string]$description
+function KillIsolatedGroups{
+	Param([ResourceGroupManager]$resourceGroupManager,
+		  [string]$pattern
 	)
-	$untaggedList = New-Object System.Collections.ArrayList
-	$returnList = New-Object System.Collections.ArrayList
-	
-	$totalInGroup=0
-	$untaggedInGroup=0
-	
-	foreach($group in $groupBucket)
-	{
-		$totalInGroup++
-		$currentGroup = $resourceGroupManager.GetGroup($group)
-		if($currentGroup)
-		{
-			$missing = $currentGroup.FindMissingTags($expectedTags)
 
-			if($missing.Count -gt 0)
-			{
-				$untaggedInGroup++
-				# This is where a delete would occur.
-				#$currentGroup.Delete()
-				$untaggedList.Add($currentGroup.Name) > $null
-			}
-		}
+	$groupPattern = '*' + $pattern + '*'
+	Write-Host("Search pattern : " + $groupPattern)
+	$groupsInPattern = $resourceGroupManager.FindGroup($groupPattern)
+	foreach($group in $groupsInPattern)
+	{
+		Write-Host("Target = " + $group.Name)
+		$group.Delete()
 	}
-	
-	$returnList.Add("Description : " + $description) > $null
-	$returnList.Add("Total : " + $totalInGroup.ToString()) > $null
-	$returnList.Add("Untagged: " + $untaggedInGroup.ToString()) > $null
-	$returnList.AddRange($untaggedList)
-	
-	$returnList
 }
 
 if($subId -and $subName)
@@ -90,22 +68,10 @@ if($subId -and $subName)
 		# Get a list of all the resource groups in buckets.
 		if($resourceGroupManager)
 		{
+			KillIsolatedGroups -resourceGroupManager $resourceGroupManager -pattern $rgPattern
 			# Collect the buckets of groups
-			$groupBuckets = $resourceGroupManager.GetGroupBuckets()
-			
-			# Create arrays for the results for each processing step
-			$unlockedUntagged = New-Object System.Collections.ArrayList
-			$delLockedUntagged = New-Object System.Collections.ArrayList
-			$roLockedUntagged = New-Object System.Collections.ArrayList
-			
-			# Process each group
-			Write-Host("Processing unlocked groups.....")
-			$unlockedUntagged = GetGroupInformation -groupBucket $groupBuckets.Unlocked -subManager $subManager -resourceGroupManager $resourceGroupManager -description "Unlocked and un-tagged resource groups will be deleted on XXXX"
-			Write-Host("Processing delete locked groups.....")
-			$delLockedUntagged = GetGroupInformation -groupBucket $groupBuckets.DeleteLocked -subManager $subManager -resourceGroupManager $resourceGroupManager -description "Delete Locked and un-tagged resource groups will be unlocked and deleted on on XXXX"
-			Write-Host("Processing read only locked groups.....")
-			$roLockedUntagged = GetGroupInformation -groupBucket $groupBuckets.ReadOnlyLocked -subManager $subManager -resourceGroupManager $resourceGroupManager -description "Readonly Locked and un-tagged resource groups will be unlocked and deleted on on XXXX"
 
+			<#
 			# Create an output object, then persist it to disk.
 			$resultsObject = New-Object PSObject -Property @{ 
 				UnlockedUntagged = $unlockedUntagged
@@ -120,6 +86,7 @@ if($subId -and $subName)
 			
 			Write-Host("Contents written to: " + $fileName)
 			Write-Host("")
+			#>
 		}
 		else
 		{
