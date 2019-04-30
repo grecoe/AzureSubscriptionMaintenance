@@ -1,5 +1,4 @@
 # Local files
 /TestMove.ps1
-/Subscriptions.json
-/ComplianceCheck/*
-
+/Compliance/ComplianceCheck/*
+/Compliance/Subscriptions.json
