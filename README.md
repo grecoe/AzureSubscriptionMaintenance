@@ -16,9 +16,9 @@ The scripts in this repository are broken down into 3 groups.
 
 |Folder|Contents|
 |--------------|----------------|
-|[Modules](../Modules)| This folder contains the [PowerShell modules](https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_modules?view=powershell-6) that wrap the AzureRM and Az CLI commands to perform tasks against your Azure Subscriptions.| 
-|[GenericExamples](../GenericExamples)| This folder contains a series of example scripts using the modules to perform various tasks. These will help you understand the function of the modules.| 
-|[Compliance](../Compliance)| This folder contains a more specific use case across several subscriptions to perform tasks on behalf of a specific compliance policy set out by a random team. | 
+|[Modules](./Modules)| This folder contains the [PowerShell modules](https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_modules?view=powershell-6) that wrap the AzureRM and Az CLI commands to perform tasks against your Azure Subscriptions.| 
+|[GenericExamples](./GenericExamples)| This folder contains a series of example scripts using the modules to perform various tasks. These will help you understand the function of the modules.| 
+|[Compliance](./Compliance)| This folder contains a more specific use case across several subscriptions to perform tasks on behalf of a specific compliance policy set out by a random team. | 
 
 
 ## Prerequisites
