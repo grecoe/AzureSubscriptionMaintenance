@@ -42,6 +42,6 @@ foreach($sub in $subList.PSObject.Properties)
 {
 	Write-Host("Name: " + $sub.Name)
 	Write-Host("ID: " + $sub.Value)
-	#.\_CMP03_Check.ps1 -subId $sub.Value -subName $sub.Name
-	.\_CMP04_IsolatedDelete.ps1 -subId $sub.Value -subName $sub.Name -rgPattern 'saw'
+	.\_CMP03_Check.ps1 -subId $sub.Value -subName $sub.Name
+	#\_CMP04_IsolatedDelete.ps1 -subId $sub.Value -subName $sub.Name -rgPattern 'saw'
 }

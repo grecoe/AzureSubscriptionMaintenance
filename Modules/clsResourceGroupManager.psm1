@@ -460,6 +460,7 @@ class ResourceGroupManager {
 				$groupName.Contains("StreamAnalytics-Default-") -or
 				$groupName.Contains("databricks-") -or
 				$groupName.Contains("fileserverrg-") -or
+				$groupName.Contains("NetworkWatcherRG") -or
 				($groupName -like 'MC*aks*')
 				)
 			)
