@@ -2,3 +2,4 @@
 /TestMove.ps1
 /Compliance/ComplianceCheck/*
 /Compliance/Subscription.json
+/Compliance/WeeklySubscription.json
