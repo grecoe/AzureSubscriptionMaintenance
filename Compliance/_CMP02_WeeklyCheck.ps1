@@ -140,7 +140,7 @@ $finalObject = New-Object PSObject -Property @{
 }
 
 $directoryName = '.\ComplianceCheck'
-$fileName = $directoryName + '\GlobalCheckRobert.json'
+$fileName = $directoryName + '\GlobalCheck.json'
 md -ErrorAction Ignore -Name $directoryName
 Out-File -FilePath $fileName -InputObject ($finalObject | ConvertTo-Json -depth 100)
 

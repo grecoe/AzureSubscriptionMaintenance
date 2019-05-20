@@ -461,6 +461,8 @@ class ResourceGroupManager {
 				$groupName.Contains("databricks-") -or
 				$groupName.Contains("fileserverrg-") -or
 				$groupName.Contains("NetworkWatcherRG") -or
+				$groupName.Contains("Default-ApplicationInsights-") -or
+				$groupName.StartsWith("VS-") -or
 				($groupName -like 'MC_*')
 				)
 			)
