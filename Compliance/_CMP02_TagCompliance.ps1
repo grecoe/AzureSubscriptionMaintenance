@@ -39,11 +39,11 @@ param(
 $subList = (Get-Content -Path ('.\' + $in) -raw) | ConvertFrom-Json
 
 $totalSubs=0
-$totalGroups=0
-$untaggedGroups=1
 $expectedTags = @('alias', 'project', 'expires')
 
 $subManager = [SubscriptionManager]::new()
+
+$overallInformation = @{}
 
 foreach($sub in $subList.PSObject.Properties)
 {
@@ -55,24 +55,44 @@ foreach($sub in $subList.PSObject.Properties)
 	
 	if($result.Count -eq 1)
 	{
+		$subGroups=0
+		$subUntagged=0
+		$untaggedSubInformation = New-Object System.Collections.ArrayList
+
 		$currentSubscription = $result[0]
 		
 		$subManager.SetSubscription($currentSubscription)
 		$resourceGroupManager = [ResourceGroupManager]::new()
 		
+		Write-Host("Processing groups for " + $sub.Name)
+		
 		foreach($group in $resourceGroupManager.ResourceGroups)
 		{
-			$totalGroups++
-			
-			$missing = $group.FindMissingTags($expectedTags)
-
-			if($missing.Count -gt 0)
+			if($resourceGroupManager.IsSpecialGroup($group.Name) -eq $false)
 			{
-				$untaggedGroups++
+				$subGroups++
+				$missing = $group.FindMissingTags($expectedTags)
+
+				if($missing.Count -gt 0)
+				{
+					$untaggedSubInformation.Add($group.Name) > $null
+					$subUntagged++
+				}
 			}
 		}
+
+		$subResults = New-Object PSObject -Property @{ 
+			Total = $subGroups
+			Untagged  = $subUntagged
+			Groups = $untaggedSubInformation
+		}
+
+		$overallInformation.Add($sub.Name, $subResults)
 	}
 }
+
 Write-Host("Total Subs: " + $totalSubs)
-Write-Host("Total Groups: " + $totalGroups)
-Write-Host("Untagged Groups: " + $untaggedGroups)
+
+$outputData = $overallInformation | ConvertTo-Json -depth 100
+$outputFile = '.\TagComplianceOverview.json'
+Out-File -FilePath $outputFile -InputObject $outputData

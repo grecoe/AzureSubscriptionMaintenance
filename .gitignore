@@ -3,3 +3,5 @@
 /Compliance/ComplianceCheck/*
 /Compliance/Subscription.json
 /Compliance/WeeklySubscription.json
+/Compliance/_CMP00_DataCollection.ps1
+/Compliance/_CMP00_DataCollectionDriver.ps1
