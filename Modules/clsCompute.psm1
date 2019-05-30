@@ -144,53 +144,63 @@ class AzureCompute {
 				foreach($workspace in $workspaceDeployments[$resourceGroup].Keys)
 				{
 					Write-Host("    Workspace: " + $workspace)
-					# Now find out what we want 
-					$computeListText = az ml computetarget list -g $resourceGroup -w $workspace
-					$computeList = $computeListText | ConvertFrom-Json
+					try {
+						# Now find out what we want 
+						$computeListText = az ml computetarget list -g $resourceGroup -w $workspace
+						$computeList = $computeListText | ConvertFrom-Json
 			
-					$amlsWorkspace = [AMLSWorkspace]::new()
-					$amlsWorkspace.ResourceGroup = $resourceGroup
-					$amlsWorkspace.Workspace = $workspace
-					#$amlsWorkspace.Details = $computeListText
+						$amlsWorkspace = [AMLSWorkspace]::new()
+						$amlsWorkspace.ResourceGroup = $resourceGroup
+						$amlsWorkspace.Workspace = $workspace
 					
-					foreach($compute in $computeList)
-					{
-						$computeDetailsText = az ml computetarget show -n $compute.name -g $resourceGroup -w $workspace -v
-						$computeDetails = $computeDetailsText | ConvertFrom-Json
-						
-						$amlsCluster = [AMLSCluster]::new()
-						$amlsCluster.ComputeName = $compute.name
-						$amlsCluster.ComputeLocation = $computeDetails.properties.computeLocation
-						$amlsCluster.ComputeType = $computeDetails.properties.computeType
-						$amlsCluster.State = $computeDetails.properties.provisioningState
-						$amlsCluster.Priority = $computeDetails.properties.properties.vmPriority
-						$amlsCluster.SKU = $computeDetails.properties.properties.vmSize
-						$amlsCluster.CurrentNodes = $computeDetails.properties.status.currentNodeCount
-						$amlsCluster.MaxNodes = $computeDetails.properties.properties.scaleSettings.maxNodeCount
-						$amlsCluster.MinNodes = $computeDetails.properties.properties.scaleSettings.minNodeCount
-						
-						if($groupManager -and ($amlsCluster.ComputeType -eq 'AKS'))
+						foreach($compute in $computeList)
 						{
-							$groupPattern = "*" + $amlsCluster.ComputeName + "*"
-							$associatedClusterGroup = $groupManager.FindGroup($groupPattern)
-							if($associatedClusterGroup.Count -eq 1)
-							{
-								$amlsCluster.AksClusterGroup = $associatedClusterGroup[0]
-							}
+							try {
+								$computeDetailsText = az ml computetarget show -n $compute.name -g $resourceGroup -w $workspace -v
+								$computeDetails = $computeDetailsText | ConvertFrom-Json
+						
+								$amlsCluster = [AMLSCluster]::new()
+								$amlsCluster.ComputeName = $compute.name
+								$amlsCluster.ComputeLocation = $computeDetails.properties.computeLocation
+								$amlsCluster.ComputeType = $computeDetails.properties.computeType
+								$amlsCluster.State = $computeDetails.properties.provisioningState
+								$amlsCluster.Priority = $computeDetails.properties.properties.vmPriority
+								$amlsCluster.SKU = $computeDetails.properties.properties.vmSize
+								$amlsCluster.CurrentNodes = $computeDetails.properties.status.currentNodeCount
+								$amlsCluster.MaxNodes = $computeDetails.properties.properties.scaleSettings.maxNodeCount
+								$amlsCluster.MinNodes = $computeDetails.properties.properties.scaleSettings.minNodeCount
+						
+								if($groupManager -and ($amlsCluster.ComputeType -eq 'AKS'))
+								{
+									$groupPattern = "*" + $amlsCluster.ComputeName + "*"
+									$associatedClusterGroup = $groupManager.FindGroup($groupPattern)
+									if($associatedClusterGroup.Count -eq 1)
+									{
+										$amlsCluster.AksClusterGroup = $associatedClusterGroup[0]
+									}
 							
-							if($amlsCluster.AksClusterGroup)
-							{
-								$amlsCluster.AksClusterSummary = $this.GetVirtualMachineSummary($amlsCluster.AksClusterGroup.Name,$null)
+									if($amlsCluster.AksClusterGroup)
+									{
+										$amlsCluster.AksClusterSummary = $this.GetVirtualMachineSummary($amlsCluster.AksClusterGroup.Name,$null)
+									}
+								}
+						
+								$amlsWorkspace.Clusters.Add($amlsCluster) > $null
+							}
+							catch {
+								Write-Host("Failed to show cluster")
 							}
 						}
-						
-						$amlsWorkspace.Clusters.Add($amlsCluster) > $null
-					}
 					
-					$returnList.Add($amlsWorkspace) > $null
+						$returnList.Add($amlsWorkspace) > $null
+					}
+					catch {
+						Write-Host("Failed to list compute targets") 
+					}
 				}
+									
 			}
-			
+
 			$this.AMLSCompute = $returnList.Clone()
 		}		
 		
