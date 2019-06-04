@@ -53,6 +53,10 @@ class AzureResources {
 			{
 				$details.Add("SKU" , $res.Sku.Name)
 			}
+			if($res.ManagedBy)
+			{
+				$details.Add("ManagedBy" , $res.ManagedBy)
+			}
 			$details.Add("Location" , $res.Location)
 			
 			$returnList[$res.ResourceGroupName].Add($res.Name, $details)
