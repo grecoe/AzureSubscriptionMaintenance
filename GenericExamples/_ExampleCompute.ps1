@@ -33,7 +33,7 @@ $subManager = [SubscriptionManager]::new()
 $currentSubscription = $null
 
 # Filter on subscriptions by a name or partial name 
-$subscriptionNameToFind="DevOps"
+$subscriptionNameToFind="Sharat"
 Write-Host("Searching for:  " + $subscriptionNameToFind )
 $result = $subManager.FindSubscription($subscriptionNameToFind)
 

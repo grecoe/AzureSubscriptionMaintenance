@@ -114,7 +114,14 @@ class AzureResources {
 			$resourceData = @{}
 			$resourceData.Add("ResourceType", $res.ResourceType)
 			$resourceData.Add("ResourceId", $res.Id)
-			$returnTable.Add($res.Name, $resourceData)
+
+			$keyName = $res.Name
+			$attempt = 1
+			while($returnTable.ContainsKey($keyName) -eq $True)
+			{
+				$keyName = $keyName + "_DUPE" + $attempt++
+			}
+			$returnTable.Add($keyName, $resourceData)
 		}
 		
 		return $returnTable
