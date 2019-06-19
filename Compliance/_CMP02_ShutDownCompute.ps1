@@ -38,18 +38,11 @@ $subList = (Get-Content -Path ('.\' + $in) -raw) | ConvertFrom-Json
 $subManager = [SubscriptionManager]::new()
 
 $activeMachines = @{}
-$ignoredMachines = @{}
 
-$totalProtectedVMs=0
 $totalTargetVMs=0
 
-#$sub = $subManager.FindSubscription("Tao")
-
-#if($sub.Count -gt 0)
 foreach($sub in $subList.PSObject.Properties)
 {
-    #$useSub = $sub[0]
-
     $result = $subManager.FindSubscriptionById($sub.Value)
     $useSub = $result[0]
     $subManager.SetSubscription($useSub)
@@ -65,20 +58,22 @@ foreach($sub in $subList.PSObject.Properties)
                 ($vm.ResourceGroup -like 'MC_*') -or
                 ($vm.ResourceGroup -like 'FILESERVERRG-*'))
             {
-                if($ignoredMachines.ContainsKey($vm.ResourceGroup) -eq $false)
-                {
-                    $ignoredMachines.Add($vm.ResourceGroup, (New-Object System.Collections.ArrayList))
-                }
-                $totalProtectedVMs++
-                $ignoredMachines[$vm.ResourceGroup].Add($vm.MachineName) > $null
+                Write-Host("Ignoring : " + $vm.ResourceGroup + "/" + $vm.MachineName)
             }
-            else {
-                if($activeMachines.ContainsKey($vm.ResourceGroup) -eq $false)
+            else 
+            {
+                if($activeMachines.ContainsKey($useSub.Name) -eq $false)
                 {
-                    $activeMachines.Add($vm.ResourceGroup, (New-Object System.Collections.ArrayList))
+                    $subInfo = @{}
+                    $activeMachines.Add($useSub.Name, $subInfo)
+                }
+
+                if($activeMachines[$useSub.Name].ContainsKey($vm.ResourceGroup) -eq $false)
+                {
+                    $activeMachines[$useSub.Name].Add($vm.ResourceGroup, (New-Object System.Collections.ArrayList))
                 }
                 $totalTargetVMs++
-                $activeMachines[$vm.ResourceGroup].Add($vm.MachineName) > $null
+                $activeMachines[$useSub.Name][$vm.ResourceGroup].Add($vm.MachineName) > $null
             }
 
         }
@@ -88,8 +83,5 @@ foreach($sub in $subList.PSObject.Properties)
 
 Write-Host("Total Protected : " + $totalProtectedVMs + " Total Targets: " + $totalTargetVMs)
 
-Write-Host("****************** Ignored Machines")
-#Write-Host($ignoredMachines | ConvertTo-Json)
-
 Write-Host("****************** Active Machines")
-#Write-Host($activeMachines | ConvertTo-Json)
+Write-Host($activeMachines | ConvertTo-Json)

@@ -117,35 +117,34 @@ class ResourceGroup{
 	}	
 	
 	#########################################################################
-	#	Input is a hash table of tagName, tagValue. If empty, tags are removed
-	#	from the resource group, otherwise the tags are appended to the already
-	# 	present tags. 
+	#	Input is a hash table of tagName, tagValue. To clear tags, empty
+	# 	the Tags field on this before calling and pass in null. Otherwise,
+	#	you can modify the existing tags or add new ones. 
 	#########################################################################
 	[void] ModifyTags($newTagHashTable)
 	{
 		$tagsList = New-Object System.Collections.ArrayList
-		
+
+		# Get the existing tags
 		if($this.Tags.Count -gt 0)
 		{
 			Write-Host("Obtaining existing tags ...")
 			$this.Tags.Keys | Foreach { $tagsList.Add($_ +"='" + $this.Tags[$_] +"'") > $null }
 		}
 
-		$tagInput = $null
+		# Get any new tags
 		if($newTagHashTable)
 		{
 			$newTagHashTable.Keys | Foreach { $tagsList.Add($_ +"='" + $newTagHashTable[$_] +"'") > $null }
+		}
 
-			foreach($tag in $tagsList)
-			{	
-				$tagInput += " " + $tag
-			}
+		# Create teh update statement for tags.
+		$tagInput = $null
+		foreach($tag in $tagsList)
+		{	
+			$tagInput += " " + $tag
 		}
-		else
-		{
-			$tagInput += "''"
-		}
-		
+	
 		Write-Host("Updating " + $this.Name + " with new tag list " + $tagInput)
 		$commandString = "az group update -n " + $this.Name + " --tags " + $tagInput
 		Invoke-Expression $commandString
@@ -291,7 +290,37 @@ class ResourceGroupManager {
 		
 		return $returnGroup
 	}
-	
+
+	#########################################################################
+	#	Get group(s) using an alias, may return >1
+	#########################################################################
+	[System.Collections.ArrayList] FindGroupByOwner([String]$aliasValue){
+		$returnGroup = New-Object System.Collections.ArrayList
+		
+		$groups = $this.ResourceGroups | Where-Object { $_.Tags.ContainsKey('alias') -and ($_.Tags['alias'] -eq $aliasValue)}
+		foreach($group in $groups)
+		{
+			$returnGroup.Add($group)
+		}
+		
+		return $returnGroup
+	}
+
+	#########################################################################
+	#	Get group(s) using an alias, may return >1
+	#########################################################################
+	[System.Collections.ArrayList] FindGroupWithTag([String]$tagName){
+		$returnGroup = New-Object System.Collections.ArrayList
+		
+		$groups = $this.ResourceGroups | Where-Object { $_.Tags.ContainsKey($tagName)}
+		foreach($group in $groups)
+		{
+			$returnGroup.Add($group)
+		}
+		
+		return $returnGroup
+	}
+
 	#########################################################################
 	#	Get more details on a resource group
 	#########################################################################
@@ -442,7 +471,7 @@ class ResourceGroupManager {
 			$this.ResourceGroups.Add($newGroup) > $null
 		}
 	}
-	
+
 	#########################################################################
 	#	Determines if a group name matches a default Azure RG name.
 	#########################################################################

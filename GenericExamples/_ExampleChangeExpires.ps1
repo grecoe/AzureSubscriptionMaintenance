@@ -19,13 +19,15 @@
 #>
 
 #############################################################################
-#	In this example we will collect information Resource groups 
-#	in a specific subscription.
+# Change the expires tag on specific resource groups
 #############################################################################
 
 # Import the correct class modules
 Using module ..\Modules\clsSubscription.psm1
 Using module ..\Modules\clsResourceGroupManager.psm1
+
+$aliasValue = 'masalvar'
+$newExpires = '2019-7-16'
 
 # Perform a login prior to calling this, first call collects the subscriptions.
 $subManager = [SubscriptionManager]::new()
@@ -47,24 +49,17 @@ if($result.Count -eq 1)
 	$subManager.SetSubscription($currentSubscription)
 	$resourceGroupManager = [ResourceGroupManager]::new()
 
-	# Uncomment this code and change the group name from unknowngroup
-	# to remove all locks from the group (if it's found)
-	<#
-	$testGroup = $resourceGroupManager.GetGroup('unknowngroup')
-	if($testGroup)
-	{
-		# unlock it, find missing tags, or modify the tags in Azure 
-		$testGroup.Unlock()
-	}
-	#>
-	
-	# Get a list of all the resource groups in buckets.
-	$groupBuckets = $resourceGroupManager.GetGroupBuckets()
-	Write-Host("Group Buckets")
-	#Write-Host(($groupBuckets | ConvertTo-Json))
+	Write-Host("Find owned by " + $aliasValue)
+    $foundGroups =$resourceGroupManager.FindGroupByOwner($aliasValue)
+    
+    Write-Host("Modifying tags")
+    foreach($gp in $foundGroups)
+    {
+        Write-Host("Updating " + $gp.Name)
+        $gp.Tags['expires'] = $newExpires
 
-	# Get a summary of all the resource groups.
-	$groupSummary = $resourceGroupManager.GetGroupSummary()
-	Write-Host("Group Summary")
-	#Write-Host(($groupSummary | ConvertTo-Json))
+        $newTags = @{}
+        $newTags['modifiedby'] = 'grecoe'
+        $gp.ModifyTags($newTags)
+    }
 }
