@@ -35,7 +35,9 @@ Using module ..\Modules\clsResourceGroupManager.psm1
 
 #####################################################
 # Parameters for the script
-# out - File name to output subs, path fixed internally
+# subId - Subscripiton ID
+# subName - SubscripitonName
+# rgPattern - Name pattern to find.
 #####################################################
 param(
 	[string]$subId,

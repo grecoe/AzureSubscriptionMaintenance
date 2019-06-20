@@ -31,7 +31,7 @@ Using module ..\Modules\clsResourceGroupManager.psm1
 
 #####################################################
 # Parameters for the script
-# out - File name to output subs, path fixed internally
+# in - File name containing subscription list
 #####################################################
 param(
 	[string]$in

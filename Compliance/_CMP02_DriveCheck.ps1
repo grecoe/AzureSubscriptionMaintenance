@@ -30,7 +30,8 @@
 
 #####################################################
 # Parameters for the script
-# out - File name to output subs, path fixed internally
+# in - File name of input file from running CollectSubs
+# 		or some trimmed down variation.
 #####################################################
 param(
 	[string]$in
