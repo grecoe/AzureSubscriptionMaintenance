@@ -58,7 +58,11 @@ foreach($sub in $subList.PSObject.Properties)
                 ($vm.ResourceGroup -like 'MC_*') -or
                 ($vm.ResourceGroup -like 'FILESERVERRG-*'))
             {
-                Write-Host("Ignoring : " + $vm.ResourceGroup + "/" + $vm.MachineName)
+                Write-Host("Ignoring Cluster Machine: " + $vm.ResourceGroup + "/" + $vm.MachineName)
+            }
+            elseif( $vm.ShutdownSchedule -eq $true)
+            {
+                Write-Host("Ignoring Machine With Shutdown Schedule: " + $vm.ResourceGroup + "/" + $vm.MachineName)
             }
             else 
             {
@@ -81,7 +85,7 @@ foreach($sub in $subList.PSObject.Properties)
 }
 
 
-Write-Host("Total Protected : " + $totalProtectedVMs + " Total Targets: " + $totalTargetVMs)
+Write-Host(" Total Targets: " + $totalTargetVMs)
 
 Write-Host("****************** Active Machines")
 Write-Host($activeMachines | ConvertTo-Json)

@@ -29,7 +29,8 @@ class VirtualMachine {
 	[string]$MachineName 
 	[bool]$Running 
 	[bool]$Deallocated  
-	[bool]$Stopped  
+	[bool]$Stopped
+	[bool]$ShutdownSchedule  
 	[string]$Sku 
 
 	
@@ -86,6 +87,9 @@ class AMLSCluster {
 	[ComputeSummary]$AksClusterSummary
 }
 
+#############################################################################
+#	Summary of compute resources used for both VM and AMLS Compute
+#############################################################################
 class ComputeSummary {
 	[int]$RunningTotal
 	[int]$StoppedTotal
@@ -98,11 +102,25 @@ class ComputeSummary {
 }
 
 #############################################################################
+#	Auto Shutdown Schedules for Virtual Machines are a seperate, but hidden
+#	resource in the resource group. THey are of type Microsoft.DevTestLab/schedule
+#
+#	Name appears to be shutdown-computevm-[VMNAME]
+#############################################################################
+class ShutdownSchedule {
+	[String]$ResourceGroup
+	[String]$Name
+	[String]$ResourceType
+}
+
+
+#############################################################################
 #	Utility to collect compute resources in the subscription.
 #############################################################################
 class AzureCompute {
 	[System.Collections.HashTable]$VirtualMachines=$null
 	[System.Collections.ArrayList]$AMLSCompute=$null
+	[System.Collections.ArrayList]$ShutdownSchedules=$null
 	
 	AzureCompute(){
 		$this.ClearCache()
@@ -115,6 +133,20 @@ class AzureCompute {
 	[void] ClearCache() {
 		$this.VirtualMachines = New-Object System.Collections.HashTable
 		$this.AMLSCompute = $null
+		$this.ShutdownSchedules = New-Object System.Collections.ArrayList
+
+		$schedules = [AzureResources]::FindDeployments("Microsoft.DevTestLab/schedules")
+		foreach($rgKey in $schedules.Keys)
+		{
+			foreach($rsrc in $schedules[$rgKey].Keys)
+			{
+				$sched = [ShutdownSchedule]::new()
+				$sched.ResourceGroup = $rgKey
+				$sched.Name = $rsrc
+				$sched.ResourceType = "Microsoft.DevTestLab/schedules"
+				$this.ShutdownSchedules.Add($sched)
+			}
+		}
 	}
 
 	###############################################################
@@ -423,7 +455,12 @@ class AzureCompute {
 		$vmInformation.Stopped=$stopped
 		$vmInformation.Deallocated=$deallocated
 		$vmInformation.Running=$running
-		#$vmInformation.Sku=$sku
+
+		$schedules = $this.ShutdownSchedules | Where-Object { ($_.ResourceGroup -eq $resourceGroup) -and ($_.Name -like "shutdown-*") -and ($_.Name -like "*$instanceName") }
+		if($schedules.Count -gt 0)
+		{
+			$vmInformation.ShutdownSchedule = $true
+		}
 		
 		return $vmInformation
 	}	
