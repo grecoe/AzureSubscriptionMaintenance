@@ -38,14 +38,18 @@ $subList = (Get-Content -Path ('.\' + $in) -raw) | ConvertFrom-Json
 $subManager = [SubscriptionManager]::new()
 
 $activeMachines = @{}
-
+$activeSkus = @{}
+$activeSkuCounts = @{}
 $totalTargetVMs=0
 
 foreach($sub in $subList.PSObject.Properties)
 {
+
     $result = $subManager.FindSubscriptionById($sub.Value)
     $useSub = $result[0]
     $subManager.SetSubscription($useSub)
+
+    $activeSkuCounts.Add($useSub.Name, 0)
 
     $compute = [AzureCompute]::new()
     $vmList = $compute.GetVirtualMachines($null, $null)
@@ -66,6 +70,13 @@ foreach($sub in $subList.PSObject.Properties)
             }
             else 
             {
+                if($activeSkus.ContainsKey($vm.Sku) -eq $false)
+                {
+                    $activeSkus.Add($vm.Sku, 0)
+                }
+                $activeSkus[$vm.Sku]++
+                $activeSkuCounts[$useSub.Name]++
+
                 if($activeMachines.ContainsKey($useSub.Name) -eq $false)
                 {
                     $subInfo = @{}
@@ -86,6 +97,11 @@ foreach($sub in $subList.PSObject.Properties)
 
 
 Write-Host(" Total Targets: " + $totalTargetVMs)
+Write-HOst(($activeSkus | ConvertTo-Json))
+Write-HOst(($activeSkuCounts | ConvertTo-Json))
+
+
+
 
 Write-Host("****************** Active Machines")
-Write-Host($activeMachines | ConvertTo-Json)
+#Write-Host($activeMachines | ConvertTo-Json)

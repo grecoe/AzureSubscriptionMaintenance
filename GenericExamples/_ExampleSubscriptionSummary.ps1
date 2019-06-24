@@ -34,7 +34,7 @@ $subManager = [SubscriptionManager]::new()
 $currentSubscription = $null
 
 # Filter on subscriptions by a name or partial name
-$subscriptionNameToFind="Danielle"
+$subscriptionNameToFind="Tao"
 $result = $subManager.FindSubscription($subscriptionNameToFind)
 
 
@@ -66,6 +66,7 @@ function ParseVirtualMachines {
 	$vmSummary["Running"] = 0
 	$vmSummary["Stopped"] = 0
 	$vmSummary["Deallocated"] = 0
+	$vmSummary["StandardShutdown"] = 0
 	$vmSummary["Use"] = @{}
 	$vmSummary["Use"]["Standard"] = 0
 	$vmSummary["Use"]["DataBricks"] = 0
@@ -90,6 +91,11 @@ function ParseVirtualMachines {
 
 		$usageType = GetVmBucket -resourceGroupName $vm.ResourceGroup
 		$vmSummary["Use"][$usageType] += 1
+
+		if( ($usageType -eq "Standard") -and ($vm.ShutdownSchedule -eq $true))
+		{
+			$vmSummary["StandardShutdown"] += 1
+		}
 	}
 
 	$vmSummary
@@ -162,7 +168,11 @@ function ParseResourceGroups {
 		$rgDetails["Resources"][$resourceGroup.Name] = @{}
 		$rgDetails["Resources"][$resourceGroup.Name]["ResourceCount"] = $rsrc.Keys.Count
 
-		if($missing.Count -gt 0){
+		if($rgManager.IsSpecialGroup($resourceGroup.Name))
+		{
+			$rgDetails["Resources"][$resourceGroup.Name]["Compliant"] = "N/A - Special"
+		}
+		elseif($missing.Count -gt 0){
 			$rgDetails["Resources"][$resourceGroup.Name]["Compliant"] = "False"
 		}
 		else {
