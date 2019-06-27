@@ -37,6 +37,7 @@ class Subscription {
 #############################################################################
 class SubscriptionManager {
 	$Subscriptions = $null
+	static $CurrentSubscription = $null
 	
 	SubscriptionManager(){
 		$this.Subscriptions = New-Object System.Collections.ArrayList
@@ -52,9 +53,36 @@ class SubscriptionManager {
 		if($sub)
 		{
 			Write-Host("Setting account context: " + $sub.Name)
+			[SubscriptionManager]::CurrentSubscription = $sub
 			$context = Set-AzureRmContext -SubscriptionID $sub.Id
 			$context = az account set -s $sub.Id
 		}
+	}
+
+	#########################################################################
+	#	Get an access token for the current subscription
+	#########################################################################
+	static [string] GetAccessToken(){
+
+		if($null -eq [SubscriptionManager]::CurrentSubscription)
+		{
+			Write-Host("Subscription not set, no guarantee what token this is for...")
+		}
+
+		$callResult = az account get-access-token
+		$psResult = ([System.String]::Join(' ', $callResult) | ConvertFrom-Json)
+
+		$returnToken = $null
+		foreach($prop in $psResult.PSObject.Properties)
+		{
+			if($prop.Name -eq 'accessToken')
+			{
+				$returnToken = $prop.value
+				break
+			}			
+		}
+
+		return $returnToken
 	}
 
 	#########################################################################

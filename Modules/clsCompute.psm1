@@ -19,7 +19,30 @@
 #>
 
 using module .\clsResources.psm1
+using module .\clsSubscription.psm1
 using module .\clsResourceGroupManager.psm1
+
+#############################################################################
+#	CPU Utilization object from a Virtual Machine
+#############################################################################
+class VirtualMachineUtilization {
+	[string]$ResourceGroup 
+	[string]$MachineName 
+	[string]$Subscription 
+	[string]$StartTime 
+	[string]$EndTime 
+    [bool]$Running 
+    
+	[decimal]$Average  
+	[decimal]$Peak
+    [decimal]$Low  
+    
+    VirtualMachineUtilization(){
+        $this.Peak = [decimal]::MinValue
+        $this.Low = [decimal]::MaxValue
+        $this.Average = 0
+    }
+}
 
 #############################################################################
 #	Represents a single virtual machine (not in AMLS Cluster)
@@ -53,6 +76,78 @@ class VirtualMachine {
 		{
 			$result = Start-AzureRmVM -ResourceGroupName $this.ResourceGroup -Name $this.MachineName
 		}
+	}
+
+	[VirtualMachineUtilization] GetCpuUtilization([int]$hours)
+	{
+ 	    # Get static information from the SubscriptionManager
+    	$token = [SubscriptionManager]::GetAccessToken()
+    	$subId =  [SubscriptionManager]::CurrentSubscription.Id
+
+	    # Set the window to get stats from by collecting start/stop times.
+    	$endDate = (Get-Date).ToUniversalTime()
+    	$startDate = $endDate.AddHours($hours * -1)
+    	$endStamp = $endDate.ToString("yyyy-MM-ddTHH:mm:00Z")
+    	$startStamp = $startDate.ToString("yyyy-MM-ddTHH:mm:00Z")
+
+    	# Prepare the return object with book keeping info
+    	$vmUtilization = [VirtualMachineUtilization]::new()
+    	$vmUtilization.ResourceGroup = $this.ResourceGroup
+    	$vmUtilization.MachineName = $this.MachineName
+    	$vmUtilization.Subscription = $subId
+    	$vmUtilization.StartTime = $startStamp
+    	$vmUtilization.EndTime = $endStamp
+
+    	Write-Host("Find CPU Utilization between " + $startStamp + " to " + $endStamp)
+
+    	# Build the URI to request for this machine
+    	$uri = [string]::Format('https://management.azure.com/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.Compute/virtualMachines/{2}/providers/microsoft.insights/metrics?api-version=2018-01-01&metricnames=Percentage%20CPU&timespan={3}/{4}',
+        	            $subId, $this.ResourceGroup, $this.MachineName, $startStamp, $endStamp)
+
+    	# Build the headers to send                
+    	$headers = @{
+ 	       'Accept' = 'application/json'
+    	    'Content-Type' = 'application/json'
+        	'Authorization' = 'Bearer ' + $token
+    	}
+
+    	# Make the request
+    	$result = Invoke-RestMethod -Uri $uri -Method Get -Headers $headers
+
+
+	    if($null -ne $result.PSObject.Properties['value'])
+    	{
+        	# Variables for stats...
+	        $totalSlices=0
+    	    $accumulatedValue=0
+
+        	# Format of result is noted (and taken from) here:
+	        # https://docs.microsoft.com/en-us/azure/virtual-machines/linux/metrics-vm-usage-rest
+
+    	    $cpuData = $result.PSObject.Properties['value'].Value[0]
+        	if($null -ne $cpuData.PSOBject.Properties['timeseries'])
+	        {
+    	        $timeseriesData = $cpuData.PSOBject.Properties['timeseries'].Value[0]
+        	    if($null -ne $timeseriesData.PSObject.Properties['data'])
+            	{
+                	$timeseries = $timeseriesData.PSObject.Properties['data'].Value
+	                foreach($slice in $timeseries)
+    	            {
+        	            $totalSlices++
+            	        $currentValue = $slice.PSObject.Properties['average'].Value 
+
+                	    $accumulatedValue += $currentValue
+                    	if($currentValue -lt $vmUtilization.Low) { $vmUtilization.Low = if ($currentValue -eq $null) { 0 }  else { $currentValue}}
+	                    if($currentValue -gt $vmUtilization.Peak) { $vmUtilization.Peak = $currentValue}
+
+    	                $vmUtilization.Running = if ($currentValue -eq $null) { $false }  else { $true}
+        	        }
+            	}
+	            $vmUtilization.Average = ($accumulatedValue/ $totalSlices)
+    	    }
+		}
+		
+    	return $vmUtilization		
 	}
 }
 

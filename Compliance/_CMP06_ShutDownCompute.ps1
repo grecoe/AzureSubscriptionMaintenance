@@ -40,7 +40,12 @@ $subManager = [SubscriptionManager]::new()
 $activeMachines = @{}
 $activeSkus = @{}
 $activeSkuCounts = @{}
+$utilizationLimit = 2.0
+$underUtilizedMachines = New-Object System.Collections.ArrayList
+
 $totalTargetVMs=0
+$clusterMachines=0
+$shutdownSchedules=0
 
 foreach($sub in $subList.PSObject.Properties)
 {
@@ -62,14 +67,17 @@ foreach($sub in $subList.PSObject.Properties)
                 ($vm.ResourceGroup -like 'MC_*') -or
                 ($vm.ResourceGroup -like 'FILESERVERRG-*'))
             {
+                $clusterMachines++
                 Write-Host("Ignoring Cluster Machine: " + $vm.ResourceGroup + "/" + $vm.MachineName)
             }
             elseif( $vm.ShutdownSchedule -eq $true)
             {
+                $shutdownSchedules++
                 Write-Host("Ignoring Machine With Shutdown Schedule: " + $vm.ResourceGroup + "/" + $vm.MachineName)
             }
             else 
             {
+                # Active machine sku across all subs
                 if($activeSkus.ContainsKey($vm.Sku) -eq $false)
                 {
                     $activeSkus.Add($vm.Sku, 0)
@@ -77,18 +85,31 @@ foreach($sub in $subList.PSObject.Properties)
                 $activeSkus[$vm.Sku]++
                 $activeSkuCounts[$useSub.Name]++
 
+                # Add in this subscription
                 if($activeMachines.ContainsKey($useSub.Name) -eq $false)
                 {
                     $subInfo = @{}
                     $activeMachines.Add($useSub.Name, $subInfo)
                 }
 
-                if($activeMachines[$useSub.Name].ContainsKey($vm.ResourceGroup) -eq $false)
-                {
-                    $activeMachines[$useSub.Name].Add($vm.ResourceGroup, (New-Object System.Collections.ArrayList))
-                }
+                # Active sku per sub
                 $totalTargetVMs++
-                $activeMachines[$useSub.Name][$vm.ResourceGroup].Add($vm.MachineName) > $null
+                if($activeMachines[$useSub.Name].ContainsKey($vm.Sku) -eq $false)
+                {
+                    $activeMachines[$useSub.Name].Add($vm.Sku, 0)
+                }
+                $activeMachines[$useSub.Name][$vm.Sku]++
+
+                # Find underutilized machines
+                $utilization = $vm.GetCpuUtilization(12)
+                if($utilization.Average -lt $utilizationLimit)
+                {
+                    $underMachine = New-Object PSObject -Property @{ 
+                        Subscription = $useSub.Name;
+                        Machine = $vm.MachineName; 
+                        Usage = $utilization.Average}
+                    $underUtilizedMachines.Add($underMachine) > $null
+                }
             }
 
         }
@@ -96,12 +117,16 @@ foreach($sub in $subList.PSObject.Properties)
 }
 
 
+Write-Host("Ignored Cluster Machines : " + $clusterMachines)
+Write-Host("Ignored with Shutdown Schedule : " + $shutdownSchedules)
+
 Write-Host(" Total Targets: " + $totalTargetVMs)
+
+Write-Host("****************** Target Machines")
 Write-HOst(($activeSkus | ConvertTo-Json))
+Write-Host("****************** Target Machines By Subscription")
 Write-HOst(($activeSkuCounts | ConvertTo-Json))
-
-
-
-
 Write-Host("****************** Active Machines")
-#Write-Host($activeMachines | ConvertTo-Json)
+Write-Host($activeMachines | ConvertTo-Json)
+Write-Host("****************** Underutilized")
+Write-Host($underUtilizedMachines | ConvertTo-Json)
