@@ -2,6 +2,9 @@
 /TestMove.ps1
 /Compliance/ComplianceCheck/*
 /Compliance/Subscription.json
+/Compliance/SubscriptionPurgeList.json
 /Compliance/WeeklySubscription.json
+/Compliance/ModifyInputFile.ps1
+/Compliance/ModifyReadSub.ps1
 /Compliance/_CMP00_DataCollection.ps1
 /Compliance/_CMP00_DataCollectionDriver.ps1

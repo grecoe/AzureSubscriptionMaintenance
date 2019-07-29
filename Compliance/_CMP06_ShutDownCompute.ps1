@@ -101,7 +101,7 @@ foreach($sub in $subList.PSObject.Properties)
                 $activeMachines[$useSub.Name][$vm.Sku]++
 
                 # Find underutilized machines
-                $utilization = $vm.GetCpuUtilization(12)
+                $utilization = $vm.GetCpuUtilization(48)
                 if($utilization.Average -lt $utilizationLimit)
                 {
                     $underMachine = New-Object PSObject -Property @{ 
