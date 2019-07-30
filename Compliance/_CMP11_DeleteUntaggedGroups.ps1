@@ -24,6 +24,7 @@
 
 Using module ..\Modules\clsSubscription.psm1
 Using module ..\Modules\clsResourceGroupManager.psm1
+Using module ..\Modules\clsLogger.psm1
 
 
 
@@ -33,6 +34,19 @@ Using module ..\Modules\clsResourceGroupManager.psm1
 		 where each object contains SubscriptionId, SubscriptionName, ExclusionList
 
 		 ExclusionList is a group of resource groups that should NOT be modified. 
+
+		 Format: 
+		[
+    		{
+        		"SubscriptionId":  "ID",
+        		"SubscriptionName":  "NAME",
+        		"ExclusionList":  [
+                		            "list of resource groups to ignore"
+                        		  ]
+    		},
+			...
+		]
+
 #>
 param(
 	[string]$in

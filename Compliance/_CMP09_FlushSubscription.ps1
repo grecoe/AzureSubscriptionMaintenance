@@ -24,6 +24,7 @@
 
 Using module ..\Modules\clsSubscription.psm1
 Using module ..\Modules\clsResourceGroupManager.psm1
+Using module ..\Modules\clsLogger.psm1
 
 
 
@@ -33,6 +34,19 @@ Using module ..\Modules\clsResourceGroupManager.psm1
 		 where each object contains SubscriptionId, SubscriptionName, ExclusionList
 
 		 ExclusionList is a group of resource groups that should NOT be modified. 
+
+		 Format: 
+		[
+    		{
+        		"SubscriptionId":  "ID",
+        		"SubscriptionName":  "NAME",
+        		"ExclusionList":  [
+                		            "list of resource groups to ignore"
+                        		  ]
+    		},
+			...
+		]
+
 #>
 param(
 	[string]$in
@@ -47,7 +61,9 @@ $subManager = [SubscriptionManager]::new()
 
 foreach($sub in $subList)
 {
-	Write-Host($sub.SubscriptionId + " " + $sub.SubscriptionName)
+	$logger = [Logger]::new( $sub.SubscriptionName + '.txt', "SubscriptionCleanup")
+
+	$logger.AddContent($sub.SubscriptionId + " " + $sub.SubscriptionName)
 
 	$currentSubscription = $null
 	
@@ -72,22 +88,22 @@ foreach($sub in $subList)
             {
 				# If the group is in the exclusion list OR is a special group, bypass it 
 				# for now.
-				if($sub.ExclusionList.Contains($group.Name) -or 
+				if($sub.ExclusionList.Contains($group.Name.ToLower()) -or 
 				   $resourceGroupManager.IsSpecialGroup($group.Name))
 				{
-					Write-Host("Ignoring exluded or special group - " + $group.Name)
+					$logger.AddContent("Ignoring excluded or special group - " + $group.Name)
 					continue
 				}
 
 				# Remove any locks on it if they exist......
                 if($group.Locks.Count -gt 0)
                 {
-                    Write-Host("Removing locks from " + $group.Name)
+                    $logger.AddContent("Removing locks from " + $group.Name)
                     $group.Unlock()
 				}
 				
 				# Delete the group
-				Write-Host("Deleting group - " + $group.Name)
+				$logger.AddContent("Deleting group - " + $group.Name)
                 #$group.Delete()
             }
 
@@ -103,29 +119,33 @@ foreach($sub in $subList)
 				if($sub.ExclusionList.Contains($group.Name) -or 
 				   ($resourceGroupManager.IsSpecialGroup($group.Name) -eq $false))
 				{
-					Write-Host("Ignoring exluded or NON-special group - " + $group.Name)
+					$logger.AddContent("Ignoring excluded or NON-special group - " + $group.Name)
 					continue
 				}
 
 				# Remove any locks on it if they exist......
                 if($group.Locks.Count -gt 0)
                 {
-                    Write-Host("Removing locks from " + $group.Name)
+                    $logger.AddContent("Removing locks from " + $group.Name)
                     $group.Unlock()
 				}
 				
 				# Delete the group
-				Write-Host("Deleting group - " + $group.Name)
+				$logger.AddContent("Deleting group - " + $group.Name)
                 #$group.Delete()
             }
 
 		}
 		else
 		{
-			Write-Host("******** Unable to get resource group manager: " + $subName)
+			$logger.AddContent("******** Unable to get resource group manager: " + $subName)
 		}
-    
-    }
+	}
+	else {
+		$logger.AddContent("Unable to find subscription : " + $sub.SubscriptionId)
+	}
+
+	$logger.Flush()
 }
 
 Write-Host("Purge Script Complete!")

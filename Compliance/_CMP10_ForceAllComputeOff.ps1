@@ -24,6 +24,7 @@
 
 Using module ..\Modules\clsSubscription.psm1
 Using module ..\Modules\clsCompute.psm1
+Using module ..\Modules\clsLogger.psm1
 
 <#
     Parameters for the script
@@ -31,6 +32,19 @@ Using module ..\Modules\clsCompute.psm1
 		 where each object contains SubscriptionId, SubscriptionName, ExclusionList
 
 		 ExclusionList is a group of resource groups that should NOT be modified. 
+
+		 Format: 
+		[
+    		{
+        		"SubscriptionId":  "ID",
+        		"SubscriptionName":  "NAME",
+        		"ExclusionList":  [
+                		            "list of resource groups to ignore"
+                        		  ]
+    		},
+			...
+		]
+
 #>
 param(
 	[string]$in
@@ -40,9 +54,11 @@ param(
 $subList = (Get-Content -Path ('.\' + $in) -raw) | ConvertFrom-Json
 
 
+$generalLogger = [Logger]::new( 'Overview.txt', "ComputeShutDown")
+
 foreach($sub in $subList)
 {
-	Write-Host($sub.SubscriptionId + " " + $sub.SubscriptionName)
+	$generalLogger.AddContent($sub.SubscriptionId + " " + $sub.SubscriptionName)
 
 	# Perform a login prior to calling this, first call collects the subscriptions.
 	$subManager = [SubscriptionManager]::new()
@@ -54,13 +70,17 @@ foreach($sub in $subList)
 	# Possible to get more than one result, so....be careful.
 	if($result.Count -eq 1)
 	{
-  		# Set this subscription as the current subscription to work on.
+		$logger = [Logger]::new( $sub.SubscriptionName + '.txt', "ComputeShutDown")
+
+		# Set this subscription as the current subscription to work on.
         $currentSubscription = $result[0]
         $subManager.SetSubscription($currentSubscription)
 
         $compute = [AzureCompute]::new()
         $vmList = $compute.GetVirtualMachines($null, $null)
-    
+
+		$generalLogger.AddContent(" Number of machines found : " + $vmList.Count)
+		
         foreach($vm in $vmList)
         {
             if($vm.Running -eq $true)
@@ -68,17 +88,27 @@ foreach($sub in $subList)
                 if( ($vm.ResourceGroup -like "databricks-*") -or 
                     ($vm.ResourceGroup -like 'MC_*'))
                 {
-                    Write-Host("Ignoring Cluster Machine: " + $vm.ResourceGroup + "/" + $vm.MachineName)
-                }
+                    $logger.AddContent("Ignoring Cluster Machine: " + $vm.ResourceGroup + "/" + $vm.MachineName)
+				}
+				elseif($sub.ExclusionList.Contains($vm.ResourceGroup.ToLower()) -eq $true)
+				{
+                    $logger.AddContent("Ignoring Excluded Resource Group - Machine: " + $vm.ResourceGroup + "/" + $vm.MachineName)
+				}
                 else 
                 {
-                    Write-Host("Shutting down " + $vm.MachineName)
+                    $logger.AddContent("Shutting down " + $vm.ResourceGroup + "/" + $vm.MachineName)
                     #$vm.Stop($true)
                 }
     
             }
-        }        
-    }
+		}   
+		
+		$logger.Flush()
+	}
+	else {
+		$generalLogger.AddContent($sub.SubscriptionId + " not found")
+	}
 }
 
+$generalLogger.Flush()
 Write-Host("Shutdown Script Complete!")
