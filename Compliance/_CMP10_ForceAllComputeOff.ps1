@@ -85,12 +85,14 @@ foreach($sub in $subList)
         {
             if($vm.Running -eq $true)
             {
+				<#
                 if( ($vm.ResourceGroup -like "databricks-*") -or 
                     ($vm.ResourceGroup -like 'MC_*'))
                 {
                     $logger.AddContent("Ignoring Cluster Machine: " + $vm.ResourceGroup + "/" + $vm.MachineName)
 				}
-				elseif($sub.ExclusionList.Contains($vm.ResourceGroup.ToLower()) -eq $true)
+				#>
+				if($sub.ExclusionList.Contains($vm.ResourceGroup.ToLower()) -eq $true)
 				{
                     $logger.AddContent("Ignoring Excluded Resource Group - Machine: " + $vm.ResourceGroup + "/" + $vm.MachineName)
 				}

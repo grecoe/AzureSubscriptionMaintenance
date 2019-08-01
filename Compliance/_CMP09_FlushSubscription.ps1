@@ -107,33 +107,51 @@ foreach($sub in $subList)
                 #$group.Delete()
             }
 
-			# Some special groups (clusters/etc) likely dissapeared in the above cleaning
-			# so ensure we have the latest snapshot
-			$resourceGroupManager.ClearCache()
+			<# 
+				August 1, 2019
+				Full purge NOT underway, in most cases so protect those that will NOT be flushed.
+			#>
 
-			# Now go through them again and delete ONLY the special groups
-            foreach($group in $resourceGroupManager.ResourceGroups)
-            {
-				# If the group is in the exclusion list OR is a special group, bypass it 
-				# for now.
-				if($sub.ExclusionList.Contains($group.Name) -or 
-				   ($resourceGroupManager.IsSpecialGroup($group.Name) -eq $false))
-				{
-					$logger.AddContent("Ignoring excluded or NON-special group - " + $group.Name)
-					continue
-				}
+			if($sub.ExclusionList.Count -eq 0)
+			{
+				# Some special groups (clusters/etc) likely dissapeared in the above cleaning
+				# so ensure we have the latest snapshot
+				$resourceGroupManager.ClearCache()
 
-				# Remove any locks on it if they exist......
-                if($group.Locks.Count -gt 0)
-                {
-                    $logger.AddContent("Removing locks from " + $group.Name)
-                    $group.Unlock()
-				}
+				# Now go through them again and delete ONLY the special groups
+            	foreach($group in $resourceGroupManager.ResourceGroups)
+            	{
+					# If the group is in the exclusion list OR is a special group, bypass it 
+					# for now.
+					if($sub.ExclusionList.Contains($group.Name) -or 
+				   		($resourceGroupManager.IsSpecialGroup($group.Name) -eq $false))
+					{
+						if($resourceGroupManager.IsSpecialGroup($group.Name) -eq $false)
+						{
+							$logger.AddContent("****** NON SPECIAL GROUP PROBLEM - " + $group.Name)
+						}
+						else {
+							$logger.AddContent("Ignoring excluded or NON-special group - " + $group.Name)
+						}
+
+						continue
+					}
+
+					# Remove any locks on it if they exist......
+                	if($group.Locks.Count -gt 0)
+                	{
+                    	$logger.AddContent("Removing locks from " + $group.Name)
+                    	$group.Unlock()
+					}
 				
-				# Delete the group
-				$logger.AddContent("Deleting group - " + $group.Name)
-                #$group.Delete()
-            }
+					# Delete the group
+					$logger.AddContent("Deleting group - " + $group.Name)
+                	#$group.Delete()
+				}
+			}
+			else {
+				$logger.AddContent("Special groups ignored since exclusion list not empty")
+			}
 
 		}
 		else
